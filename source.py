@@ -48,7 +48,7 @@ def mainmenu(call):
     bot.send_message(call.from_user.id, text="Выбирай критерий👇", reply_markup=search_reply)
 
 
-@bot.message_handler(func = lambda msg: State.objects(user_id = msg.from_user.id).first().state == 'меню')
+@bot.message_handler(func = lambda call: True)
 def find_movie(msg):
     if msg.text == "Популярное🍿" or msg.text.lower() == 'популярное':
         State.objects(user_id=str(msg.from_user.id)).update(state='популярное')
@@ -68,25 +68,25 @@ def find_movie(msg):
         bot.send_message(msg.chat.id, text="Я тебя не понимаю")
 
 
-@bot.message_handler(func = lambda msg: State.objects(user_id = msg.from_user.id).first().state == 'популярное')
+@bot.message_handler(func = lambda msg: State.objects(user_id = msg.chat.id).first().state == 'популярное')
 def search_popular():
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = msg.from_user.id).first().state == 'случайный фильм')
+@bot.message_handler(func = lambda msg: State.objects(user_id = msg.chat.id).first().state == 'случайный фильм')
 def search_random():
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = msg.from_user.id).first().state == 'актер')
+@bot.message_handler(func = lambda msg: State.objects(user_id = msg.chat.id).first().state == 'актер')
 def search_actor():
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = msg.from_user.id).first().state == 'режиссер')
+@bot.message_handler(func = lambda msg: State.objects(user_id = msg.chat.id).first().state == 'режиссер')
 def search_director():
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = msg.from_user.id).first().state == 'жанр')
+@bot.message_handler(func = lambda msg: State.objects(user_id = msg.chat.id).first().state == 'жанр')
 def search_jenre():
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = msg.from_user.id).first().state == 'имя фильма')
+@bot.message_handler(func = lambda msg: State.objects(user_id = msg.chat.id).first().state == 'имя фильма')
 def search_name():
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = msg.from_user.id).first().state == 'год выпуска')
+@bot.message_handler(func = lambda msg: State.objects(user_id = msg.chat.id).first().state == 'год выпуска')
 def search_year():
     pass
 
