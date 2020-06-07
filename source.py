@@ -2,6 +2,7 @@
 import telebot
 from telebot import types
 from mongoengine import *
+import copy
 
 bot = telebot.TeleBot('1002991204:AAHnJ2q9kV1htX5iRREZpW0Vg_6xOFOOSao')
 connect("cinebot_database")
@@ -10,85 +11,170 @@ connect("cinebot_database")
 class State(Document):
     user_id = StringField(required=True, unique=True)
     state = ListField()
+    mode = StringField()
+
 
 @bot.message_handler(commands=['help'])
 def help_msg(msg):
-    bot.send_message(msg.from_user.id, 'Ты можешь подобрать фильм по параметрам или довериться мне и выбрать '
-                                           'случайный фильм из тех, что мне известны. Напиши /start и начнем искать!')
+    txt = '''
+Данный бот создан независимой командой разработки Pythlings в рамках летней практики в МГТУ им. Н.Э.Баумана.\n\n
+Он предназначен для решения задачи оптимизации времени поиска фильмов и сериалов.\n
+/start - приветственное сообщение.
+/go - начать поиск.
+/restart - перезапустить поиск.
+/back - вернуться к предыдущему шагу.
+/help - получение справки.
+'''
 
-@bot.message_handler(commands=['start', 'restart'])
+    bot.send_message(msg.from_user.id, text=txt)
+
+
+@bot.message_handler(commands=['start'])
 def welcome_msg(msg):
+    bot.send_message(msg.from_user.id, text='Тебя приветствует Cinebot, мы поможем тебе отлично провести время за просмотром фильмов 🎥.\n\
+Напиши /go и начнем искать!🔎')
+
+
+@bot.message_handler(commands=['go', 'restart'])
+@bot.message_handler(func=lambda msg: ((State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'старт'))
+def go(msg):
     try:
-        user = State(user_id=str(msg.from_user.id))
+        user = State(user_id=str(msg.from_user.id), state=['старт'])
         user.save()
-    except: pass
-    type_reply = types.ReplyKeyboardMarkup(one_time_keyboard = True)
+    except:
+        pass
+    type_reply = types.ReplyKeyboardMarkup(one_time_keyboard=True)
     movie = types.KeyboardButton(text="🎬 Фильм")
     series = types.KeyboardButton(text="📺 Сериал")
     type_reply.row(movie, series)
     bot.send_message(msg.chat.id, text="Что хочешь посмотреть, {}?".format(msg.chat.first_name),
                      reply_markup=type_reply)
-    State.objects(user_id=str(msg.from_user.id)).update(state='мод')
+    State.objects(user_id=str(msg.from_user.id)).update(state=['старт', 'мод'], mode='')
 
 
-@bot.message_handler(func = lambda msg: (State.objects(user_id = str(msg.chat.id)))[0].state == 'мод')
+@bot.message_handler(commands=['back'])
+def back(msg):
+    try:
+        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+        if len(user_data.state) == 2:
+            user_data.mode = ''
+        user_data.state.pop()
+        user_data.save()
+    except:
+        pass
+
+
+@bot.message_handler(func=lambda msg: ((State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'мод' and msg.text == "📺 Сериал"))
+def serial(msg):
+    user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+    user_data.mode = 'сериал'
+    user_data.save()
+    bot.send_message(msg.chat.id, text='К сожалению данный функционал пока недоступен :(',
+                     reply_markup=types.ReplyKeyboardRemove())
+
+
+@bot.message_handler(func=lambda msg: ((State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'мод' and msg.text == "🎬 Фильм"))
 def mainmenu(msg):
     popular = types.KeyboardButton("Популярное🍿")
     random = types.KeyboardButton("Случайный фильм🎲")
     actor = types.KeyboardButton("Актер💃🏻")
     director = types.KeyboardButton("Режиссер📽")
     genre = types.KeyboardButton("Жанр🎬")
-    name = types.KeyboardButton("Имя фильма🎙")
+    name = types.KeyboardButton("Название фильма🎙")
     year = types.KeyboardButton("Год выпуска 📅 ")
-    search_reply = types.ReplyKeyboardMarkup(one_time_keyboard = True)
+    search_reply = types.ReplyKeyboardMarkup()
     search_reply.row(actor, director, genre)
     search_reply.row(year, random)
     search_reply.row(popular, name)
     bot.send_message(msg.chat.id, text="Выбирай критерий👇", reply_markup=search_reply)
-    State.objects(user_id=str(msg.from_user.id)).update(state='меню')
+    user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+    user_data.mode = 'фильм'
+    user_data.state.append('меню')
+    user_data.save()
 
 
-
-@bot.message_handler(func = lambda msg: (State.objects(user_id = str(msg.chat.id)))[0].state == 'меню')
+@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'меню' and \
+                                      (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
 def find_movie(msg):
+    reply = types.ReplyKeyboardRemove()
     if msg.text == "Популярное🍿" or msg.text.lower() == 'популярное':
-        State.objects(user_id=str(msg.from_user.id)).update(state='популярное')
+        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+        user_data.state.append('популярное')
+        user_data.save()
+        bot.send_message(msg.chat.id, text='Напиши любимую цифру и немного погоди', reply_markup=reply)
     elif msg.text == "Случайный фильм🎲" or msg.text.lower() == 'случайный фильм':
-        State.objects(user_id=str(msg.from_user.id)).update(state='случайный фильм')
+        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+        user_data.state.append('случайный фильм')
+        user_data.save()
+        bot.send_message(msg.chat.id, text='Напиши любимую цифру и немного погоди', reply_markup=reply)
     elif msg.text == "Актер💃🏻" or msg.text.lower() == 'актер':
-        State.objects(user_id=str(msg.from_user.id)).update(state='актер')
+        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+        user_data.state.append('актер')
+        user_data.save()
+        bot.send_message(msg.chat.id, text='Напиши имя актера и погоди немного', reply_markup=reply)
     elif msg.text == "Режиссер📽" or msg.text.lower() == 'режиссер':
-        State.objects(user_id=str(msg.from_user.id)).update(state='режиссер')
+        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+        user_data.state.append('режиссер')
+        user_data.save()
+        bot.send_message(msg.chat.id, text='Напиши имя режиссера и погоди немного', reply_markup=reply)
     elif msg.text == "Жанр🎬" or msg.text.lower() == 'жанр':
-        State.objects(user_id=str(msg.from_user.id)).update(state='жанр')
-    elif msg.text == "Имя фильма🎙" or msg.text.lower() == 'имя фильма':
-        State.objects(user_id=str(msg.from_user.id)).update(state='имя фильма')
-    elif msg.text == "Год выпуска 📅":
-        State.objects(user_id=str(msg.from_user.id)).update(state='год выпуска')
+        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+        user_data.state.append('жанр')
+        user_data.save()
+        bot.send_message(msg.chat.id, text='Напиши название жанра и погоди немного', reply_markup=reply)
+    elif msg.text == "Название фильма🎙" or msg.text.lower() == 'название фильма':
+        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+        user_data.state.append('имя фильма')
+        user_data.save()
+        bot.send_message(msg.chat.id, text='Напиши название фильма и немного погоди', reply_markup=reply)
+    elif msg.text == "Год выпуска 📅" or msg.text.lower() == 'год выпуска':
+        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+        user_data.state.append('год выпуска')
+        user_data.save()
+        bot.send_message(msg.chat.id, text='Напиши год выпуска и немного погоди', reply_markup=reply)
     else:
-        bot.send_message(msg.chat.id, text="Я тебя не понимаю")
+        bot.send_message(msg.chat.id, text="Я тебя не понимаю", reply_markup=reply)
 
 
-@bot.message_handler(func = lambda msg: State.objects(user_id = str(msg.chat.id)).first().state == 'популярное')
-def search_popular():
+@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'Популярное' and \
+                                      (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
+def search_popular(msg):
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = str(msg.chat.id)).first().state == 'случайный фильм')
-def search_random():
+
+
+@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'случайный фильм' and \
+                                      (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
+def search_random(msg):
     pass
-@bot.message_handler(func = lambda msg: State.objects(uuser_id = str(msg.chat.id)).first().state == 'актер')
-def search_actor():
+
+
+@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'актер' and \
+                                      (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
+def search_actor(msg):
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = str(msg.chat.id)).first().state == 'режиссер')
-def search_director():
+
+
+@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'режиссер' and \
+                                      (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
+def search_director(msg):
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = str(msg.chat.id)).first().state == 'жанр')
-def search_jenre():
+
+
+@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'жанр' and \
+                                      (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
+def search_genre(msg):
     pass
-@bot.message_handler(func = lambda msg: State.objects(user_id = str(msg.chat.id)).first().state == 'имя фильма')
-def search_name():
+
+
+@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'название фильма' and \
+                                      (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
+def search_name(msg):
     pass
-@bot.message_handler(func = lambda msg: State.objects(uuser_id = str(msg.chat.id)).first().state == 'год выпуска')
-def search_year():
+
+
+@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'год выпуска' and \
+                                      (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
+def search_year(msg):
     pass
 
 
