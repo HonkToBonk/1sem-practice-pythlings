@@ -27,7 +27,8 @@ def get_random():
         name = driver.find_element_by_class_name("moviename-title-wrapper").text
         driver.close()
         if by_name(name) == '-1':
-            print("Sorry, can't find film.")
+            return "-1"
     except NoSuchElementException:
             driver.close()
-            print("Sorry, can't find film.")
+            return "-1"
+        
