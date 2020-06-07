@@ -4,6 +4,7 @@ from telebot import types
 from mongoengine import *
 from SearchEngine.SearchByName import *
 from SearchEngine.SearchByYear import *
+from SearchEngine.SearchByDirector import *
 
 
 bot = telebot.TeleBot('1002991204:AAHnJ2q9kV1htX5iRREZpW0Vg_6xOFOOSao')
@@ -168,7 +169,12 @@ def search_actor(msg):
 @bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'режиссер' and \
                                       (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
 def search_director(msg):
-    pass
+    if by_director(msg.text, msg, bot) == '-1':
+        bot.send_message(msg.chat.id, text='К сожалению мне не удалось ничего найти')
+    user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+    user_data.state.append('Нашел')
+    user_data.save()
+    bot.send_message(msg.chat.id, text='Введите команду /restart, чтобы подобрать что-нибудь новенькое.')
 
 
 @bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'жанр' and \
