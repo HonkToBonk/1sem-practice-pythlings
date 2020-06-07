@@ -5,9 +5,9 @@ from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 import time
-from SearchByName import *
+from .SearchByName import *
 
-def top_five():
+def top_five(msg,bot):
     chrome_options = Options()
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-gpu")
@@ -20,10 +20,11 @@ def top_five():
         i = 0
         n = 5
         while i < n:
-            if by_name(name[i].text) == '-1':
+            if by_name(name[i].text,msg,bot) == '-1':
                 n += 1
             i += 1      
         driver.close()
-    except NoSuchElementException:
-            driver.close()
+    except:
+        driver.close()
+        return '-1'
     
