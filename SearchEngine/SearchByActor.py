@@ -7,7 +7,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 from SearchByName import *
 
-def by_director(in_actor):
+def by_actor(in_actor):
     chrome_options = Options()
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-gpu")
