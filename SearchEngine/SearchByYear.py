@@ -5,18 +5,17 @@ from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 import time
-from SearchByName import *
+from .SearchByName import *
 
-def by_year(year):
-    if int(year) < 1895:
-        return '-1'
-    else:
-        chrome_options = Options()
-        chrome_options.add_argument("--disable-extensions")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--headless")
-
-        try:
+def by_year(year, msg, bot):
+    try:
+        if int(year) < 1895 or int(year) > 2020:
+            return '-1'
+        else:
+            chrome_options = Options()
+            chrome_options.add_argument("--disable-extensions")
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--headless")
             driver = webdriver.Chrome(options=chrome_options)
             driver.get("https://www.kinopoisk.ru/lists/navigator/" + year + '-' + year +"/?quick_filters=films&tab=all")
             for i in range(1,0, -1):
@@ -31,9 +30,10 @@ def by_year(year):
             n = 5
             i = 0
             while i < n and n < 20:
-                if by_name(films[i]) == '-1':
+                if by_name(films[i], msg,bot) == '-1':
                     n += 1
                 i += 1
-        except NoSuchElementException:
-                    return "-1"
+    except:
+        return "-1"
+
     

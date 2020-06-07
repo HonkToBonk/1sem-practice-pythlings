@@ -3,7 +3,8 @@ import telebot
 from telebot import types
 from mongoengine import *
 from SearchEngine.SearchByName import *
-import copy
+from SearchEngine.SearchByYear import *
+
 
 bot = telebot.TeleBot('1002991204:AAHnJ2q9kV1htX5iRREZpW0Vg_6xOFOOSao')
 connect("cinebot_database")
@@ -53,6 +54,7 @@ def back(msg):
         if user_data.state[-1] == 'старт': welcome_msg(msg)
         elif user_data.state[-1] == 'мод': go(msg)
         elif user_data.state[-1] == 'меню' and user_data.mode == 'фильм': mainmenu(msg)
+        elif user_data.mode == 'фильм': mainmenu(msg)
         user_data.save()
     except:
         pass
@@ -188,7 +190,12 @@ def search_name(msg):
 @bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'год выпуска' and \
                                       (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
 def search_year(msg):
-    pass
+    if by_year(msg.text, msg, bot) == '-1':
+        bot.send_message(msg.chat.id, text='К сожалению мне не удалось ничего найти')
+    user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+    user_data.state.append('Нашел')
+    user_data.save()
+    bot.send_message(msg.chat.id, text='Введите команду /restart, чтобы подобрать что-нибудь новенькое.')
 
 
 bot.polling()
