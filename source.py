@@ -2,6 +2,7 @@
 import telebot
 from telebot import types
 from mongoengine import *
+from SearchEngine.SearchByName import *
 import copy
 
 bot = telebot.TeleBot('1002991204:AAHnJ2q9kV1htX5iRREZpW0Vg_6xOFOOSao')
@@ -25,7 +26,6 @@ def help_msg(msg):
 /back - вернуться к предыдущему шагу.
 /help - получение справки.
 '''
-
     bot.send_message(msg.from_user.id, text=txt)
 
 
@@ -54,7 +54,6 @@ def back(msg):
         elif user_data.state[-1] == 'мод': go(msg)
         elif user_data.state[-1] == 'меню' and user_data.mode == 'фильм': mainmenu(msg)
         user_data.save()
-
     except:
         pass
 
@@ -134,7 +133,7 @@ def find_movie(msg):
         bot.send_message(msg.chat.id, text='Напиши название жанра и погоди немного', reply_markup=reply)
     elif msg.text == "Название фильма🎙" or msg.text.lower() == 'название фильма':
         user_data = (State.objects(user_id=str(msg.chat.id)))[0]
-        user_data.state.append('имя фильма')
+        user_data.state.append('название фильма')
         user_data.save()
         bot.send_message(msg.chat.id, text='Напиши название фильма и немного погоди', reply_markup=reply)
     elif msg.text == "Год выпуска 📅" or msg.text.lower() == 'год выпуска':
@@ -146,7 +145,7 @@ def find_movie(msg):
         bot.send_message(msg.chat.id, text="Я тебя не понимаю", reply_markup=reply)
 
 
-@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'Популярное' and \
+@bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'популярное' and \
                                       (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
 def search_popular(msg):
     pass
@@ -179,8 +178,12 @@ def search_genre(msg):
 @bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'название фильма' and \
                                       (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')
 def search_name(msg):
-    pass
-
+    if by_name(msg.text, msg, bot) == '-1':
+        bot.send_message(msg.chat.id, text = 'К сожалению мне не удалось ничего найти')
+    user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+    user_data.state.append('Нашел')
+    user_data.save()
+    bot.send_message(msg.chat.id, text = 'Введите команду /restart, чтобы подобрать что-нибудь новенькое.')
 
 @bot.message_handler(func=lambda msg: (State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'год выпуска' and \
                                       (State.objects(user_id=str(msg.chat.id)))[0].mode == 'фильм')

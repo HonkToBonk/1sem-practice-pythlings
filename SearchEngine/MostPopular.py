@@ -26,5 +26,4 @@ def top_five():
         driver.close()
     except NoSuchElementException:
             driver.close()
-            print("Sorry.")
     
