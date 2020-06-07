@@ -30,19 +30,38 @@ def help_msg(msg):
 
 
 @bot.message_handler(commands=['start'])
+
 def welcome_msg(msg):
+    try:
+        user = State(user_id=str(msg.from_user.id))
+        user.save()
+    except:
+        pass
+    user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+    user_data.state = ['старт']
+    user_data.save()
     bot.send_message(msg.from_user.id, text='Тебя приветствует Cinebot, мы поможем тебе отлично провести время за просмотром фильмов 🎥.\n\
-Напиши /go и начнем искать!🔎')
+Напиши /go и начнем искать!🔎', reply_markup = types.ReplyKeyboardRemove())
+
+@bot.message_handler(commands=['back'])
+def back(msg):
+    try:
+        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
+        if len(user_data.state) == 2:
+            user_data.mode = ''
+        user_data.state.pop()
+        if user_data.state[-1] == 'старт': welcome_msg(msg)
+        elif user_data.state[-1] == 'мод': go(msg)
+        elif user_data.state[-1] == 'меню' and user_data.mode == 'фильм': mainmenu(msg)
+        user_data.save()
+
+    except:
+        pass
 
 
 @bot.message_handler(commands=['go', 'restart'])
 @bot.message_handler(func=lambda msg: ((State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'старт'))
 def go(msg):
-    try:
-        user = State(user_id=str(msg.from_user.id), state=['старт'])
-        user.save()
-    except:
-        pass
     type_reply = types.ReplyKeyboardMarkup(one_time_keyboard=True)
     movie = types.KeyboardButton(text="🎬 Фильм")
     series = types.KeyboardButton(text="📺 Сериал")
@@ -52,16 +71,7 @@ def go(msg):
     State.objects(user_id=str(msg.from_user.id)).update(state=['старт', 'мод'], mode='')
 
 
-@bot.message_handler(commands=['back'])
-def back(msg):
-    try:
-        user_data = (State.objects(user_id=str(msg.chat.id)))[0]
-        if len(user_data.state) == 2:
-            user_data.mode = ''
-        user_data.state.pop()
-        user_data.save()
-    except:
-        pass
+
 
 
 @bot.message_handler(func=lambda msg: ((State.objects(user_id=str(msg.chat.id)))[0].state[-1] == 'мод' and msg.text == "📺 Сериал"))
