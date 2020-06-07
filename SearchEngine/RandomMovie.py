@@ -5,9 +5,9 @@ from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 import time
-from SearchByName import *
+from .SearchByName import *
 
-def get_random():
+def get_random(msg,bot):
     chrome_options = Options()
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-gpu")
@@ -26,7 +26,7 @@ def get_random():
             time.sleep(0.5)
         name = driver.find_element_by_class_name("moviename-title-wrapper").text
         driver.close()
-        if by_name(name) == '-1':
+        if by_name(name, msg, bot) == '-1':
             return "-1"
     except NoSuchElementException:
             driver.close()
