@@ -24,20 +24,29 @@ def by_name(in_name):
         driver.find_element_by_partial_link_text(in_name).click()
         for i in range(1,0, -1):
             time.sleep(0.5)
-        name = driver.find_element_by_tag_name("h1").text
-        print(name)
+        get_name = driver.find_element_by_tag_name("h1").text
+        name = get_name
         get_data = driver.find_elements_by_tag_name("tr")
-        print(''.join(get_data[0].text))
+        data = ''.join(get_data[0].text)
         get_stars = driver.find_elements_by_tag_name("li")
-        print(get_stars[4].text)
-        print(get_stars[5].text)
-        print(get_stars[6].text)
+        star1 = get_stars[4].text
+        star2 = get_stars[5].text
+        star3 = get_stars[6].text
         driver.find_element_by_id("online-view-options-watch-button").click()
         for i in range(1,0, -1):
                     time.sleep(0.5)
-        url = driver.current_url
+        get_url = driver.current_url
+        url = get_url
         driver.close()
-        print(url)
+        if len(url) == 0:
+            return '-1'
+        else:
+            print(name)
+            print(data)
+            print(star1)
+            print(star2)
+            print(star3)
+            print(url)
     except NoSuchElementException:
         driver.close()
         return '-1'
