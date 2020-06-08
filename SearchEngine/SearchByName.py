@@ -40,7 +40,7 @@ def by_name(in_name, msg, bot):
         if len(url) == 0:
             return '-1'
         else:
-            txt = name+ '\n' + data+ '\n' + star1+ '\n' + star2+ '\n' + star3+ '\n' + url
+            txt = '🎞'+ name+ '\n' + '📆'+' '.join(data.split('\n'))+ '\n' +'🌟' +star1+ '\n' +'🌟' + star2+ '\n' +'🌟' + star3+ '\n' + url
             bot.send_message(msg.chat.id, text = txt)
     except:
         driver.close()
