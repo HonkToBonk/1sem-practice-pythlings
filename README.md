@@ -1,1 +1,2 @@
-https://docs.google.com/presentation/d/1hcRy0HC1qZ3snyAyHkUnkrLG41Buf3ix2oXmjCi05qk/edit#slide=id.p13
+Летняя практика в МГТУ 1 семестр.
+Телеграмм-бот для поиска кинофильмов по заданным параметрам. 
